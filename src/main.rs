@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::io::{Read, Write};
+use std::io::{self, BufReader, Write};
+use std::process;
 
 #[derive(Debug)]
 struct TodoItem {
@@ -31,17 +32,27 @@ impl TodoList {
     }
 
     fn list_items(&self) {
-        for item in self.items.values() {
-            println!("- {}", item.description);
+        for (id, item) in self.items.iter() {
+            println!("  - [{}] {}", id, item.description);
         }
     }
 
-    fn load_from_file(&mut self, _filename: &str) {
-        // Removed for simplicity
+    // Simplified load and save using serde (optional)
+    #[cfg(feature = "serde")]
+    fn load_from_file(&mut self, filename: &str) -> std::io::Result<()> {
+        let file = std::fs::File::open(filename)?;
+        let reader = BufReader::new(file);
+        *self = serde_json::from_reader(reader)?;
+        Ok(())
     }
 
-    fn save_to_file(&self, _filename: &str) {
-        // Removed for simplicity
+    #[cfg(feature = "serde")]
+    fn save_to_file(&self, filename: &str) -> std::io::Result<()> {
+        let file = std::fs::File::create(filename)?;
+        let mut writer = std::io::BufWriter::new(file);
+        serde_json::to_writer(&mut writer, self)?;
+        writer.flush()?;
+        Ok(())
     }
 }
 
@@ -49,19 +60,19 @@ fn main() -> std::io::Result<()> {
     let mut todo_list = TodoList::new();
 
     loop {
-        let mut input = String::new();
         println!("--- TODO list ---");
         todo_list.list_items();
+
         println!("Enter command (add, list, quit):");
-        std::io::stdin().read_line(&mut input)?;
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
 
         let command = input.trim();
-
         match command {
             "add" => {
-                let mut new_input = String::new();
                 println!("Enter task description:");
-                std::io::stdin().read_line(&mut new_input)?;
+                let mut new_input = String::new();
+                io::stdin().read_line(&mut new_input)?;
                 todo_list.add_item(new_input.trim().to_string());
             }
             "list" => todo_list.list_items(),
@@ -70,5 +81,6 @@ fn main() -> std::io::Result<()> {
         }
     }
 
+    println!("Exiting...");
     Ok(())
 }
