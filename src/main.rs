@@ -1,86 +1,103 @@
-use std::collections::HashMap;
-use std::io::{self, BufReader, Write};
-use std::process;
+use std::io;
+use std::io::Write;
 
-#[derive(Debug)]
-struct TodoItem {
-    description: String,
+struct Todo {
+    items: Vec<String>,
 }
 
-impl TodoItem {
-    fn new(description: String) -> Self {
-        TodoItem { description }
+impl Todo {
+    fn new() -> Todo {
+        Todo { items: Vec::new() }
     }
-}
 
-struct TodoList {
-    items: HashMap<u32, TodoItem>,
-    next_id: u32,
-}
+    fn add_item(&mut self, item: String) {
+        self.items.push(item);
+    }
 
-impl TodoList {
-    fn new() -> Self {
-        TodoList {
-            items: HashMap::new(),
-            next_id: 1,
+    fn view_items(&self) {
+        if self.items.is_empty() {
+            println!("No todo items yet!");
+        } else {
+            println!("** Todo Items **");
+            for (i, item) in self.items.iter().enumerate() {
+                println!("{}: {}", i + 1, item);
+            }
         }
     }
 
-    fn add_item(&mut self, description: String) {
-        self.items.insert(self.next_id, TodoItem::new(description));
-        self.next_id += 1;
-    }
-
-    fn list_items(&self) {
-        for (id, item) in self.items.iter() {
-            println!("  - [{}] {}", id, item.description);
+    fn delete_item(&mut self, index: usize) {
+        if index > 0 && index <= self.items.len() {
+            self.items.remove(index - 1);
+            println!("Item deleted successfully!");
+        } else {
+            println!("Invalid index");
         }
-    }
-
-    // Simplified load and save using serde (optional)
-    #[cfg(feature = "serde")]
-    fn load_from_file(&mut self, filename: &str) -> std::io::Result<()> {
-        let file = std::fs::File::open(filename)?;
-        let reader = BufReader::new(file);
-        *self = serde_json::from_reader(reader)?;
-        Ok(())
-    }
-
-    #[cfg(feature = "serde")]
-    fn save_to_file(&self, filename: &str) -> std::io::Result<()> {
-        let file = std::fs::File::create(filename)?;
-        let mut writer = std::io::BufWriter::new(file);
-        serde_json::to_writer(&mut writer, self)?;
-        writer.flush()?;
-        Ok(())
     }
 }
 
-fn main() -> std::io::Result<()> {
-    let mut todo_list = TodoList::new();
+fn main() {
+    let mut todo = Todo::new();
 
     loop {
-        println!("--- TODO list ---");
-        todo_list.list_items();
+        println!("\n** Todo App **");
+        println!("-----------------");
+        println!("1. **Add** a Todo Item");
+        println!("2. **View** Todo Items");
+        println!("3. **Delete** a Todo Item");
+        println!("4. **Exit**");
+        println!("-----------------");
 
-        println!("Enter command (add, list, quit):");
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
+        print!("Choose an option: ");
+        io::stdout().flush().expect("Can't flush stdout");
 
-        let command = input.trim();
-        match command {
-            "add" => {
-                println!("Enter task description:");
-                let mut new_input = String::new();
-                io::stdin().read_line(&mut new_input)?;
-                todo_list.add_item(new_input.trim().to_string());
+        let mut choice = String::new();
+
+        io::stdin().read_line(&mut choice)
+            .expect("Failed to read line");
+
+        let choice: i32 = match choice.trim().parse() {
+            Ok(num) => num,
+            _ => {
+                println!("Invalid choice. Please try again!");
+                continue;
             }
-            "list" => todo_list.list_items(),
-            "quit" => break,
-            _ => println!("Invalid command"),
+        };
+
+        match choice {
+            1 => {
+                let mut item = String::new();
+                print!("Enter a todo item: ");
+                io::stdout().flush().expect("Can't flush stdout");
+                io::stdin().read_line(&mut item)
+                    .expect("Failed to read line");
+                todo.add_item(item.trim().to_string());
+                println!("Item added successfully!");
+            }
+            2 => {
+                todo.view_items();
+            }
+            3 => {
+                let mut index = String::new();
+                print!("Enter the item number to delete: ");
+                io::stdout().flush().expect("Can't flush stdout");
+                io::stdin().read_line(&mut index)
+                    .expect("Failed to read line");
+                let index: usize = match index.trim().parse() {
+                    Ok(num) => num,
+                    _ => {
+                        println!("Invalid index. Please try again!");
+                        continue;
+                    }
+                };
+                todo.delete_item(index);
+            }
+            4 => {
+                println!("Exiting...");
+                break;
+            }
+            _ => {
+                println!("Invalid choice. Please try again!");
+            }
         }
     }
-
-    println!("Exiting...");
-    Ok(())
 }
