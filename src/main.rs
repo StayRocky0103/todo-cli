@@ -19,9 +19,11 @@ impl Todo {
             println!("No todo items yet!");
         } else {
             println!("** Todo Items **");
+            println!("-----------------");
             for (i, item) in self.items.iter().enumerate() {
-                println!("{}: {}", i + 1, item);
+                println!("| {:>2} | {:<20} |", i + 1, item);
             }
+            println!("-----------------");
         }
     }
 
