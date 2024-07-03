@@ -2,7 +2,7 @@ use std::io;
 use std::io::Write;
 
 struct Todo {
-    items: Vec<String>,
+    items: Vec<(String, String)>,
 }
 
 impl Todo {
@@ -10,8 +10,8 @@ impl Todo {
         Todo { items: Vec::new() }
     }
 
-    fn add_item(&mut self, item: String) {
-        self.items.push(item);
+    fn add_item(&mut self, item: String, project: String) {
+        self.items.push((item, project));
     }
 
     fn view_items(&self) {
@@ -20,8 +20,8 @@ impl Todo {
         } else {
             println!("** Todo Items **");
             println!("-----------------");
-            for (i, item) in self.items.iter().enumerate() {
-                println!("| {:>2} | {:<20} |", i + 1, item);
+            for (i, (item, project)) in self.items.iter().enumerate() {
+                println!("| {:>2} | {} - {} |", i + 1, item, project);
             }
             println!("-----------------");
         }
@@ -72,7 +72,12 @@ fn main() {
                 io::stdout().flush().expect("Can't flush stdout");
                 io::stdin().read_line(&mut item)
                     .expect("Failed to read line");
-                todo.add_item(item.trim().to_string());
+                let mut project = String::new();
+                print!("Enter the project: ");
+                io::stdout().flush().expect("Can't flush stdout");
+                io::stdin().read_line(&mut project)
+                    .expect("Failed to read line");
+                todo.add_item(item.trim().to_string(), project.trim().to_string());
                 println!("Item added successfully!");
             }
             2 => {
